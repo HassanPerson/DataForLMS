@@ -85,3 +85,94 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[!] An error occurred: {e}")
         print("[!] Note: Ensure your local environment has active Kaggle API credentials (~/.kaggle/kaggle.json).")
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 1. Generate Synthetic Sales Data
+np.random.seed(42)
+n_rows = 1000
+
+dates = pd.date_range(start="2025-01-01", end="2025-12-31", periods=n_rows)
+categories = ["Electronics", "Apparel", "Home & Kitchen", "Beauty", "Sports"]
+regions = ["North America", "Europe", "Asia-Pacific", "Latin America"]
+
+df = pd.DataFrame({
+    "Date": dates,
+    "Category": np.random.choice(categories, size=n_rows, p=[0.3, 0.25, 0.2, 0.15, 0.1]),
+    "Region": np.random.choice(regions, size=n_rows, p=[0.4, 0.3, 0.2, 0.1]),
+    "Units_Sold": np.random.randint(1, 15, size=n_rows),
+    "Unit_Price": np.random.uniform(10.0, 300.0, size=n_rows).round(2)
+})
+
+# Calculate total revenue per transaction
+df["Revenue"] = df["Units_Sold"] * df["Unit_Price"]
+df["Month"] = df["Date"].dt.to_period("M")
+
+# 2. Set Up Plot Style
+sns.set_theme(style="whitegrid")
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+fig.suptitle("Randomized Retail Sales Analysis Dashboard", fontsize=16, fontweight="bold")
+
+# Graph 1: Monthly Total Revenue Trend
+monthly_sales = df.groupby("Month")["Revenue"].sum().reset_index()
+monthly_sales["Month"] = monthly_sales["Month"].astype(str)
+
+sns.lineplot(
+    data=monthly_sales, 
+    x="Month", 
+    y="Revenue", 
+    marker="o", 
+    color="#1f77b4", 
+    linewidth=2.5, 
+    ax=axes[0, 0]
+)
+axes[0, 0].set_title("Monthly Revenue Trend", fontweight="bold")
+axes[0, 0].set_xlabel("Month")
+axes[0, 0].set_ylabel("Revenue ($)")
+axes[0, 0].tick_params(axis="x", rotation=45)
+
+# Graph 2: Total Revenue by Product Category
+category_sales = df.groupby("Category")["Revenue"].sum().reset_index().sort_values(by="Revenue", ascending=False)
+
+sns.barplot(
+    data=category_sales, 
+    x="Revenue", 
+    y="Category", 
+    palette="viridis", 
+    ax=axes[0, 1]
+)
+axes[0, 1].set_title("Total Revenue by Category", fontweight="bold")
+axes[0, 1].set_xlabel("Revenue ($)")
+axes[0, 1].set_ylabel("Category")
+
+# Graph 3: Regional Sales Distribution
+region_sales = df.groupby("Region")["Revenue"].sum().reset_index()
+
+axes[1, 0].pie(
+    region_sales["Revenue"], 
+    labels=region_sales["Region"], 
+    autopct="%1.1f%%", 
+    startangle=140, 
+    colors=sns.color_palette("pastel")
+)
+axes[1, 0].set_title("Revenue Share by Region", fontweight="bold")
+
+# Graph 4: Units Sold Distribution by Category (Boxplot)
+sns.boxplot(
+    data=df, 
+    x="Category", 
+    y="Units_Sold", 
+    palette="Set2", 
+    ax=axes[1, 1]
+)
+axes[1, 1].set_title("Units Sold Distribution per Order", fontweight="bold")
+axes[1, 1].set_xlabel("Category")
+axes[1, 1].set_ylabel("Units Sold")
+axes[1, 1].tick_params(axis="x", rotation=30)
+
+# 3. Display Plots
+plt.tight_layout()
+plt.show()
